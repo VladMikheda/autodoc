@@ -1,110 +1,75 @@
 const fs = require("fs");
 const path = require("path");
 const errors = require("./errors")
-const ERROR_ARGUMENTS = 1;
-const ERROR_PATCH = 2;
+const {
+    errorPrint,
+    ERROR_READ_FILE} = require("./errors");
 
-
-
+// main dir patch
 let mainPatch = null;
 
-
+/**
+ * Function checks repeat path and checks path exists
+ * @param patch
+ */
 const checkPatch = (patch) => {
     if(mainPatch != null){
-        console.log("help");
-        process.exit(errors.ERROR_ARGUMENTS);
+        const errorText = "arguments not correct";
+        errors.errorPrint(errors.ERROR_ARGUMENTS, errorText, true);
     }
 
     if(!fs.existsSync(patch)){
-        console.log("ERROR: patch not exist");
-        process.exit(ERROR_PATCH);
+        const errorText = "patch not exist";
+        errors.errorPrint(errors.ERROR_PATCH, errorText, false);
     }
 
     mainPatch = patch;
 }
 
+//todo move to another file
+//loop for check arguments
 for(let i = 2; i < process.argv.length; i++){
     switch (process.argv[i]){
         case '-p':
-            try {
-                checkPatch(process.argv[++i]);
-            }catch (e) {
-                console.log("help");
-                process.exit(ERROR_ARGUMENTS);
-            }
+            checkPatch(process.argv[++i]);
             break;
-        case '-h':
+        case '-m':
             checkPatch(process.argv[1])
             break;
+        case '-h':
+            errors.helpPrint();
+            break;
         default:
-            console.log("help");
-            process.exit(ERROR_ARGUMENTS);
+            errors.errorPrint(errors.ERROR_ARGUMENTS,null, true);
     }
 }
 
-
-
-// fs.readdir(mainPatch, (err, files) => {
-//     files.forEach(file => {
-//         const patchDir = path.join(mainPatch,file)
-//         if(fs.statSync(patchDir).isDirectory()){
-//             console.log(patchDir)
-//         }
-//     })
-// })
-
-
+/**
+ * Function find recursive all js files
+ * @param dir main dir path
+ */
 const readDir =  dir => {
+   let filesList = []
    const dirs = fs.readdirSync(dir);
    dirs.forEach( files => {
        const pathFile = path.join(dir,files);
        const fileStat = fs.statSync(pathFile);
        if(fileStat.isDirectory()){
-        readDir(pathFile)
+        readDir(pathFile);
        }else if(fileStat.isFile()){
            if(path.extname(pathFile) === '.js'){
-               console.log(`File: ${pathFile}`);
+               filesList.push(pathFile);
+               // console.log(`File: ${pathFile}`);
            }
        }else{
-           console.log("ERROR: failed to read file")
+           const errorText = "failed to read file";
+           errorPrint(ERROR_READ_FILE, errorText, false);
        }
    })
+    return filesList;
 }
 
-readDir(mainPatch)
-// let files = fs.readdirSync(mainPatch);
-//
-//
-// files.forEach( file => {
-//     const patchDir = path.join(mainPatch,file)
-//     const fileStats = fs.statSync(patchDir)
-//     if(fileStats.isDirectory()){
-//         console.log("dir")
-//     }else if(fileStats.isFile()){
-//         console.log("file")
-//     }else{
-//         console.log("ERROR")
-//     }
-// } )
+// readDir(mainPatch)
+console.log(readDir(mainPatch))
 
-// const read = new Promise((resolve, reject) => {
-//     fs.readdir(mainPatch, (err,files) => {
-//         console.log(files)
-//         files.forEach(file => {
-//             const patchDir = path.join(mainPatch,file)
-//             if(fs.statSync(patchDir).isDirectory()){
-//                 console.log(patchDir)
-//             }
-//         })
-//     })
-//
-//     resolve()
-// })
-//
-// read.then(() => {
-//
-// })
-
-// console.log(fs.readdirSync(mainPatch).filter( dir => dir.isDirectory()))
-
-
+//todo async read files -> parsing -> save ".md"
